@@ -6,7 +6,7 @@
 export const MICROSERVICES = {
   // ms-vendas - Gerenciamento de vendas
   vendas: {
-    baseUrl: process.env.MS_VENDAS_URL || 'http://localhost:3000',
+    baseUrl: process.env.MS_VENDAS_URL || 'http://ms-vendas:3000',
     endpoints: {
       listar: '/vendas',
       criar: '/vendas',
@@ -18,7 +18,7 @@ export const MICROSERVICES = {
   
   // ms-estoque - Gerenciamento de estoque/produtos
   estoque: {
-    baseUrl: process.env.MS_ESTOQUE_URL || 'http://localhost:3002',
+    baseUrl: process.env.MS_ESTOQUE_URL || 'http://ms-estoque:3002',
     endpoints: {
       listarProdutos: '/produtos',
       criarProduto: '/produtos',
@@ -30,7 +30,7 @@ export const MICROSERVICES = {
   
   // ms-financeiro - Gerenciamento financeiro
   financeiro: {
-    baseUrl: process.env.MS_FINANCEIRO_URL || 'http://localhost:3001',
+    baseUrl: process.env.MS_FINANCEIRO_URL || 'http://ms-financeiro:3001',
     endpoints: {
       confirmarPagamento: (vendaId: string) => `/pagamento/confirmar/${vendaId}`,
       statusPagamento: (vendaId: string) => `/pagamento/status/${vendaId}`,
