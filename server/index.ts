@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
+import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,26 @@ async function startServer() {
       createContext,
     })
   );
+
+  // Proxy endpoint para download de nota fiscal
+  app.get("/api/notas/:vendaId", async (req, res) => {
+    try {
+      const { vendaId } = req.params;
+      console.log(`📥 [Proxy] Requisição para nota fiscal: ${vendaId}`);
+      
+      const response = await axios.get(
+        `http://ms-financeiro:3001/pagamento/notas/${vendaId}`
+      );
+      
+      console.log(`✅ [Proxy] Nota fiscal gerada para: ${vendaId}`);
+      res.json(response.data);
+    } catch (error: any) {
+      console.error(`❌ [Proxy] Erro ao gerar nota fiscal:`, error.message);
+      res.status(error.response?.status || 500).json({
+        error: error.response?.data || error.message,
+      });
+    }
+  });
 
   // Serve static files from dist/public in production
   const staticPath =

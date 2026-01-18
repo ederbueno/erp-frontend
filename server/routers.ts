@@ -187,6 +187,17 @@ export const appRouter = router({
           throw new Error('Não foi possível buscar o status do pagamento.');
         }
       }),
+
+    downloadNota: publicProcedure
+      .input(z.object({ vendaId: z.string() }))
+      .query(async ({ input }) => {
+        try {
+          return await proxy.downloadNotaFiscal(input.vendaId);
+        } catch (error) {
+          console.error('[tRPC] Erro ao gerar nota fiscal:', error);
+          throw new Error('Não foi possível gerar a nota fiscal.');
+        }
+      }),
   }),
 });
 

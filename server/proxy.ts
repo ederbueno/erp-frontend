@@ -235,3 +235,15 @@ export async function buscarStatusPagamento(vendaId: string): Promise<StatusPaga
     throw error;
   }
 }
+
+export async function downloadNotaFiscal(vendaId: string) {
+  try {
+    const response = await httpClient.get(
+      `${MICROSERVICES.financeiro.baseUrl}/notas/${vendaId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[Proxy] Erro ao gerar nota fiscal:', error);
+    throw error;
+  }
+}
