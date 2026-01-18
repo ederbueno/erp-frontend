@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
+  Download,
   FileText,
   Filter,
   Loader2,
@@ -116,7 +117,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function Financeiro() {
   const { vendas, isLoading, error, refetch } = useVendas();
   const { confirmarPagamento, isConfirmando } = useFinanceiro();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
   const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
@@ -159,6 +160,80 @@ export default function Financeiro() {
       refetch();
     } catch (err) {
       // Erro já tratado no hook
+    }
+  };
+
+  const handleDownloadNota = async (vendaId: string, numeroVenda: string) => {
+    try {
+      console.log(`📥 Iniciando download de nota para vendaId: ${vendaId}`);
+
+      // Chamar o endpoint proxy do servidor
+      const response = await fetch(`/api/notas/${vendaId}`);
+
+      console.log(`📊 Response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('📋 Error response:', errorData);
+        throw new Error(`Erro ${response.status}: ${errorData}`);
+      }
+
+      const result = await response.json();
+      console.log('📄 Resultado recebido:', result);
+
+      if (!result) {
+        throw new Error('Resposta vazia da API');
+      }
+
+      // Se recebeu HTML diretamente
+      if (result.html) {
+        const blob = new Blob([result.html], { type: 'text/html;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Nota-${numeroVenda}.html`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        // Limpeza
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(link);
+        }, 100);
+
+        toast.success('✅ Nota fiscal baixada com sucesso!');
+      } else if (result.content) {
+        // Se recebeu base64
+        const binaryString = atob(result.content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'text/html;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Nota-${numeroVenda}.html`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+
+        // Limpeza
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(link);
+        }, 100);
+
+        toast.success('✅ Nota fiscal baixada com sucesso!');
+      } else {
+        console.error('❌ Dados inesperados:', result);
+        toast.error('❌ Resposta inválida da API');
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao baixar nota:', error);
+      const errorMessage = error?.message || 'Erro ao gerar nota fiscal';
+      toast.error(`Erro: ${errorMessage}`);
     }
   };
 
@@ -454,10 +529,10 @@ export default function Financeiro() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => toast.info("Nota fiscal simulada - MVP")}
+                            onClick={() => handleDownloadNota(payment.vendaId, payment.id)}
                           >
-                            <FileText className="h-4 w-4 mr-1" />
-                            NF-e
+                            <Download className="h-4 w-4 mr-1" />
+                            Baixar
                           </Button>
                         )}
                       </TableCell>
