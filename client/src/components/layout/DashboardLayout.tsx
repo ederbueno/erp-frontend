@@ -17,6 +17,7 @@ import {
   Menu,
   Package,
   ShoppingCart,
+  Users,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -36,6 +37,7 @@ interface DashboardLayoutProps {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
+  { name: "Cadastros", href: "/cadastros", icon: Users },
   { name: "Produtos", href: "/produtos", icon: Package },
   { name: "Vendas", href: "/vendas", icon: ShoppingCart },
   { name: "Financeiro", href: "/financeiro", icon: DollarSign },
