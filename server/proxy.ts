@@ -51,9 +51,32 @@ export interface Venda {
   itens: ItemVenda[];
 }
 
-export async function listarVendas(): Promise<Venda[]> {
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export async function listarVendas(
+  page: number = 1,
+  limit: number = 20,
+  status?: string,
+  search?: string
+): Promise<PaginatedResponse<Venda>> {
   try {
-    const response = await httpClient.get(`${MICROSERVICES.vendas.baseUrl}${MICROSERVICES.vendas.endpoints.listar}`);
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (status && status !== 'Todos') params.append('status', status);
+    if (search) params.append('search', search);
+
+    const response = await httpClient.get(
+      `${MICROSERVICES.vendas.baseUrl}${MICROSERVICES.vendas.endpoints.listar}?${params.toString()}`
+    );
     return response.data;
   } catch (error) {
     console.error('[Proxy] Erro ao listar vendas:', error);

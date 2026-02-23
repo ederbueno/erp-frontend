@@ -133,14 +133,22 @@ export const appRouter = router({
 
   // ==================== VENDAS ====================
   vendas: router({
-    listar: publicProcedure.query(async () => {
-      try {
-        return await proxy.listarVendas();
-      } catch (error) {
-        console.error('[tRPC] Erro ao listar vendas:', error);
-        throw new Error('Não foi possível carregar as vendas. Verifique se o microserviço está rodando.');
-      }
-    }),
+    listar: publicProcedure
+      .input(z.object({
+        page: z.number().default(1),
+        limit: z.number().default(20),
+        status: z.string().optional(),
+        search: z.string().optional(),
+      }).optional())
+      .query(async ({ input = {} }) => {
+        try {
+          const { page = 1, limit = 20, status, search } = input;
+          return await proxy.listarVendas(page, limit, status, search);
+        } catch (error) {
+          console.error('[tRPC] Erro ao listar vendas:', error);
+          throw new Error('Não foi possível carregar as vendas. Verifique se o microserviço está rodando.');
+        }
+      }),
 
     criar: publicProcedure
       .input(criarVendaSchema)
