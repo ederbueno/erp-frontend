@@ -3,6 +3,7 @@
  * Conecta com o microserviço ms-vendas via tRPC
  */
 
+import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -21,25 +22,40 @@ export interface CriarVendaInput {
   itens: ItemVenda[];
 }
 
-export function useVendas() {
+export function useVendas(initialPage = 1, initialLimit = 20, status?: string, search?: string) {
+  const [page, setPage] = useState(initialPage);
+  const [limit, setLimit] = useState(initialLimit);
+  const [currentStatus, setCurrentStatus] = useState(status);
+  const [currentSearch, setCurrentSearch] = useState(search);
+
   const utils = trpc.useUtils();
 
-  // Query para listar vendas
+  // Query para listar vendas com paginação
   const { 
-    data: vendas, 
+    data: response, 
     isLoading, 
     error,
     refetch 
-  } = trpc.vendas.listar.useQuery(undefined, {
-    retry: 1,
-    staleTime: 30000, // 30 segundos
-  });
+  } = trpc.vendas.listar.useQuery(
+    { 
+      page, 
+      limit, 
+      status: currentStatus,
+      search: currentSearch 
+    },
+    {
+      retry: 1,
+      staleTime: 60000, // 60 segundos (aumentado de 30)
+      gcTime: 300000,   // 5 minutos
+    }
+  );
 
   // Mutation para criar venda
   const criarVendaMutation = trpc.vendas.criar.useMutation({
     onSuccess: () => {
       toast.success('Venda criada com sucesso!');
       utils.vendas.listar.invalidate();
+      setPage(1); // Volta para página 1
     },
     onError: (error) => {
       toast.error(error.message || 'Erro ao criar venda');
@@ -68,9 +84,42 @@ export function useVendas() {
     },
   });
 
+  // Handler para busca com debounce
+  const handleSearch = useCallback((searchTerm: string) => {
+    setCurrentSearch(searchTerm);
+    setPage(1);
+  }, []);
+
+  // Handler para filtro de status
+  const handleStatusFilter = useCallback((newStatus: string) => {
+    setCurrentStatus(newStatus === 'Todos' ? undefined : newStatus);
+    setPage(1);
+  }, []);
+
+  // Handler para mudança de página
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+  }, []);
+
+  // Handler para mudança de limite
+  const handleLimitChange = useCallback((newLimit: number) => {
+    setLimit(newLimit);
+    setPage(1);
+  }, []);
+
+  // Extrair dados e paginação da resposta
+  const vendas = response?.data || [];
+  const pagination = response?.pagination || {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  };
+
   return {
     // Dados
-    vendas: vendas || [],
+    vendas,
+    pagination,
     isLoading,
     error,
     
@@ -80,6 +129,12 @@ export function useVendas() {
     atualizarStatus: (id: string, status: string, motivo?: string) => 
       atualizarStatusMutation.mutateAsync({ id, status, motivo }),
     deletarVenda: (id: string) => deletarVendaMutation.mutateAsync({ id }),
+    
+    // Filtros e busca
+    handleSearch,
+    handleStatusFilter,
+    handlePageChange,
+    handleLimitChange,
     
     // Estados das mutations
     isCriando: criarVendaMutation.isPending,

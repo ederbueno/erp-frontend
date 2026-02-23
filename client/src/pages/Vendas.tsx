@@ -90,7 +90,18 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function Vendas() {
-  const { vendas, isLoading, error, refetch, criarVenda, isCriando } = useVendas();
+  const { 
+    vendas, 
+    isLoading, 
+    error, 
+    refetch, 
+    criarVenda, 
+    isCriando,
+    pagination,
+    handleSearch,
+    handleStatusFilter,
+    handlePageChange,
+  } = useVendas();
   const { produtos } = useProdutos();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,14 +138,16 @@ export default function Vendas() {
   // Garantir que vendas seja um array
   const vendasArray = Array.isArray(vendas) ? vendas : [];
 
-  const filteredSales = vendasArray.filter((sale: any) => {
-    const matchesSearch =
-      sale.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sale.clienteId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sale.clienteNome?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "Todos" || sale.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Handlers para busca e filtro com debounce
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    handleSearch(value);
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value);
+    handleStatusFilter(value);
+  };
 
   const handleAddItem = () => {
     setNewSale({
@@ -506,10 +519,10 @@ export default function Vendas() {
                 placeholder="Buscar por ID ou cliente..."
                 className="pl-9"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Status" />
@@ -529,11 +542,11 @@ export default function Vendas() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold">
-            Lista de Vendas ({filteredSales.length})
+            Lista de Vendas (Página {pagination.page} de {pagination.totalPages} - Total: {pagination.total})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredSales.length === 0 ? (
+          {vendasArray.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <ShoppingCart className="h-16 w-16 text-muted-foreground/50 mb-4" />
               <p className="text-muted-foreground">Nenhuma venda encontrada</p>
@@ -561,7 +574,7 @@ export default function Vendas() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSales.map((sale: any) => (
+                  {vendasArray.map((sale: any) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-mono text-sm">
                         {sale.id?.substring(0, 8) || 'N/A'}
@@ -604,6 +617,38 @@ export default function Vendas() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {vendasArray.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Exibindo {((pagination.page - 1) * pagination.limit) + 1} a {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} vendas
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1 || isLoading}
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                >
+                  ← Anterior
+                </Button>
+                <div className="flex items-center gap-2 px-3">
+                  <span className="text-sm font-medium">
+                    Página {pagination.page} de {pagination.totalPages}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages || isLoading}
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                >
+                  Próxima →
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
